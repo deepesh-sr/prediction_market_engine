@@ -1,3 +1,10 @@
+use std::collections::{BTreeMap, VecDeque};
+
 fn main() {
-    println!("Hello, world!");
+    let mut prices : BTreeMap<u64 , String > = BTreeMap::new();
+
+    let mut line : VecDeque<String> = VecDeque::new();
+
+    println!("{:?}",line);
+
 }

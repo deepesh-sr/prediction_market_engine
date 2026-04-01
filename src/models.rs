@@ -1,19 +1,20 @@
 use serde::{Serialize,Deserialize};
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize,Deserialize,Debug,PartialEq,Clone)]
 pub enum Side {
     Buy,
     Sell,
 }
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize,Deserialize,Debug,PartialEq,Clone)]
 pub struct Order {
     pub id: u64,
     pub side: Side,
     pub price: u64,
     pub qty: u64,
 }
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+
+#[derive(Serialize,Deserialize,Debug,PartialEq,Clone)]
 pub struct Fill {
     pub maker_order_id: u64,
     pub taker_order_id: u64,
