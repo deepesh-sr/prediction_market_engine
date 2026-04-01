@@ -36,10 +36,10 @@ impl OrderBook {
                         };
                         maker.qty-=fill_qty;
 
-                        // all qty of makers got sold , hence remove it from queue's vec
+                        // fully filled maker, remove from queue
                         if maker.qty == 0 {queue.pop_front();}
 
-                        // if queue gets empty then remove it from asks too
+                        // clean empty price level so first_key_value() stays correct
                         if queue.is_empty() {self.asks.remove(&ask_price);}
 
                         order.qty-=fill_qty;
@@ -52,7 +52,40 @@ impl OrderBook {
                     self.bids.entry(order.price).or_insert_with(VecDeque::new).push_back(order);
                 }
             }
-            Side::Sell => {}
+            Side::Sell => {
+                while order.qty > 0 {
+                    let Some((&bid_price, _)) = self.bids.last_key_value() else {
+                        break;
+                    };
+                    let queue = self.bids.get_mut(&bid_price).unwrap();
+                    let maker = queue.front_mut().unwrap();
+                   
+                    if order.price <= bid_price {
+                        let fill_qty = std::cmp::min(order.qty, maker.qty);
+                        let fill = Fill {
+                            maker_order_id: maker.id,
+                            taker_order_id: order.id,
+                            price: maker.price,
+                            qty: fill_qty,
+                        };
+                        maker.qty-=fill_qty;
+
+                        // fully filled maker, remove from queue
+                        if maker.qty == 0 {queue.pop_front();}
+
+                        // clean empty price level so last_key_value() stays correct
+                        if queue.is_empty() {self.bids.remove(&bid_price);}
+
+                        order.qty-=fill_qty;
+                        fills.push(fill);
+                    }else{
+                        break;
+                    }
+                }
+                if order.qty > 0 {
+                    self.asks.entry(order.price).or_insert_with(VecDeque::new).push_back(order);
+                }
+            }
         }
 
         fills
