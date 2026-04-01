@@ -90,4 +90,15 @@ impl OrderBook {
 
         fills
     }
+
+    pub fn get_bids(&self)-> &BTreeMap<u64, VecDeque<Order>>{
+        &self.bids
+    }
+
+    pub fn get_asks(&self)-> &BTreeMap<u64, VecDeque<Order>>{
+        &self.asks
+    }
+
+    
 }
+
