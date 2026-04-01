@@ -4,7 +4,8 @@ use crate::orderbook::OrderBook;
 
 pub struct AppState{
    pub orderbook : Mutex<OrderBook>,
-    pub next_order_id : AtomicU64
+   pub next_order_id : AtomicU64
+
 }
 
 impl AppState {
