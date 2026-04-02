@@ -5,6 +5,9 @@ use std:: sync::Arc;
 use axum::{Json, Router, extract::State, routing::{get, post}};
 use prediction_market_engine::{engine::AppState, models::{Fill, Order, Side}};
 use serde::{Deserialize, Serialize};
+use axum::extract::ws::{WebSocket, WebSocketUpgrade, Message};
+use futures::{SinkExt,StreamExt};
+
 
 #[derive(Deserialize)]
 struct OrderRequest{
@@ -27,6 +30,7 @@ async fn main() {
     .route("/health", get(|| async {"Hello Workd"}))
     .route("/order", post(submit_order))
     .route("/orderbook", get(get_orderbook))
+    .route("/ws", get(ws_handler))
     .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -50,6 +54,10 @@ pub async fn submit_order(
     };
 
     let fills = orderbook.add_order(order);
+
+    for fill in &fills { 
+       let _ =  state.fill_sender.send(fill.clone());
+    }
 
     Ok(Json(OrderResponse { order_id, fills }))
 }
@@ -76,4 +84,28 @@ pub async fn get_orderbook (
     }).collect();
 
     Ok(Json(OrderBookResponse{bids ,asks }))
+}
+
+pub async fn ws_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<Arc<AppState>>,
+) -> impl axum::response::IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(
+    socket : WebSocket, 
+    state : Arc<AppState>
+){
+    let mut rx = state.fill_sender.subscribe();
+
+    let (mut sender , mut _receiver) = socket.split();
+
+    while let Ok(fill) = rx.recv().await {
+        let json = serde_json::to_string(&fill).unwrap();
+
+        if sender.send(Message::Text(json.into())).await.is_err(){
+            break;
+        }
+    }
 }
