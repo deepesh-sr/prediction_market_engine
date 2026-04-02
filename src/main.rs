@@ -33,8 +33,17 @@ async fn main() {
     .route("/ws", get(ws_handler))
     .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener_1 = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+   
+    let listener_2 = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
+    let app_2 = app.clone();
+
+    tokio::spawn(async move {
+        axum::serve(listener_2, app_2).await.unwrap();
+    });
+
+    
+    axum::serve(listener_1, app).await.unwrap();
 }
 
 pub async fn submit_order(
